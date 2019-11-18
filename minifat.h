@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define virtual_disk "vdisk.bin"
+#define virtual_disk "/dev/sdb"
 
 #define BLOCK_SIZE 512
 #define SECTOR_SIZE 4096
@@ -49,5 +49,6 @@ struct dir_entry {
 typedef struct dir_entry dir_entry_t;
 
 int format(int size);
+info_entry_t init();
 
 #endif //MINI_FAT_MINIFAT_H

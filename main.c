@@ -18,12 +18,13 @@ void create_disk(const char* path, int size) {
 }
 
 int main() {
-    if (access(virtual_disk, F_OK) == -1) {
+    /*if (access(virtual_disk, F_OK) == -1) {
         create_disk(virtual_disk, (int)100E6);
-    }
+    }*/
 
-    format((int)100E6);
+    format(3862528);
     printf("Size of fir entry: %ld\n", SECTOR_SIZE/sizeof(struct dir_entry));
+    init();
 
     return 0;
 }
