@@ -5,6 +5,7 @@
 #include <time.h>
 
 #define virtual_disk "/dev/sdb"
+extern int fd;
 
 #define BLOCK_SIZE 512
 #define SECTOR_SIZE 4096
@@ -14,6 +15,10 @@
 
 #define UNUSED 0x00
 #define ENDOFCHAIN 0xFFFFFFFF
+
+#define EMPTY_TYPE 0x00
+#define FILE_TYPE 0x01
+#define DIR_TYPE 0x02
 
 typedef uint8_t byte_t;
 
@@ -49,6 +54,7 @@ struct dir_entry {
 typedef struct dir_entry dir_entry_t;
 
 int format(int size);
-info_entry_t init();
+void init(info_entry_t* info, fat_entry_t** fat_entry, dir_entry_t** root_dir);
+int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, const char* name);
 
 #endif //MINI_FAT_MINIFAT_H
