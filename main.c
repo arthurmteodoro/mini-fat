@@ -22,6 +22,15 @@ void print_dir_entry(dir_entry_t* dir) {
     }
 }
 
+void print_disk_info(info_entry_t info) {
+    printf("Total blocks: %d\n", info.total_block);
+    printf("Available blocks: %d\n", info.available_blocks);
+    printf("Block size: %d\n", info.block_size);
+    printf("Blocks per sector: %d\n", info.block_per_sector);
+    printf("Sector per fat: %d\n", info.sector_per_fat);
+    printf("Root entry number: %d\n", info.root_entry_number);
+}
+
 int main() {
     setbuf(stdout, NULL);
 
@@ -38,11 +47,14 @@ int main() {
     printf("Initializing disk ..........");
     init(&info, &fat_entry, &root_entry);
     printf("   disk successfully initialized\n");
+    printf("Disk infos: \n");
+    print_disk_info(info);
 
     print_dir_entry(root_entry);
-    create_empty_file(root_entry, &info, "teste");
+    create_empty_file(root_entry, &info, fat_entry,"teste");
     print_dir_entry(root_entry);
 
+    release(&fat_entry, &root_entry);
     close(fd);
 
     return 0;

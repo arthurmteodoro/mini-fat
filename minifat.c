@@ -53,6 +53,15 @@ void read_sector(int sector, void* buffer) {
     }
 }
 
+void write_fat_table(void* fat, int size) {
+    char buffer[SECTOR_SIZE];
+
+    for(int i = 0; i < size; i++) {
+        memcpy(buffer, fat+(i*SECTOR_SIZE), SECTOR_SIZE);
+        write_sector(i+1, buffer);
+    }
+}
+
 int format(int size) {
     int blocks_count = size;// /BLOCK_SIZE;
     int sector_count = blocks_count/(SECTOR_SIZE/BLOCK_SIZE);
@@ -74,9 +83,11 @@ int format(int size) {
    // free(fat_entry);
 
     // write fat infos
+    int blocks_per_sector = SECTOR_SIZE/BLOCK_SIZE;
     info_entry_t info = {.total_block = blocks_count,
+                         .available_blocks = blocks_count - (blocks_per_sector) - (blocks_per_sector*qtd_sectors_for_fat_table) - (blocks_per_sector),
                          .block_size = BLOCK_SIZE,
-                         .block_per_sector = SECTOR_SIZE/BLOCK_SIZE,
+                         .block_per_sector = blocks_per_sector,
                          .sector_per_fat = qtd_sectors_for_fat_table,
                          .root_entry_number = SECTOR_SIZE/sizeof(dir_entry_t)};
 
@@ -99,7 +110,7 @@ void init(info_entry_t* info, fat_entry_t** fat_entry, dir_entry_t** root_dir) {
     memcpy(info, buffer, sizeof(info_entry_t));
 
     // malloc and read fat entry
-    *fat_entry = (fat_entry_t*) malloc(sizeof(fat_entry_t) * (info->total_block/info->block_per_sector));
+    *fat_entry = (fat_entry_t*) malloc(sizeof(fat_entry_t) * (info->available_blocks/info->block_per_sector));
     for(uint32_t i = 0; i < info->sector_per_fat; i++) {
         read_sector(i+1, buffer);
         memcpy((void*)*fat_entry+(i*SECTOR_SIZE), buffer, SECTOR_SIZE);
@@ -110,7 +121,15 @@ void init(info_entry_t* info, fat_entry_t** fat_entry, dir_entry_t** root_dir) {
     read_sector((int) info->sector_per_fat+1, *root_dir);
 }
 
-int get_first_empty_dir_entry(dir_entry_t* dir_entry, int size) {
+void release(fat_entry_t** fat_entry, dir_entry_t** root_dir) {
+    free(*fat_entry);
+    free(*root_dir);
+
+    *fat_entry = NULL;
+    *root_dir = NULL;
+}
+
+int get_first_empty_dir_entry(const dir_entry_t* dir_entry, int size) {
     for(int i = 0; i < size; i++) {
         if (dir_entry[i].type == EMPTY_TYPE) return i;
     }
@@ -118,13 +137,23 @@ int get_first_empty_dir_entry(dir_entry_t* dir_entry, int size) {
     return -1;
 }
 
-int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, const char* name) {
+int get_first_empty_fat_entry(const fat_entry_t* fat, int size) {
+    for(int i = 0; i < size; i++) {
+        if (fat[i] == UNUSED) return i;
+    }
+
+    return -1;
+}
+
+int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, fat_entry_t * fat, const char* name) {
     time_t now;
     struct tm* time_info;
     dir_entry_t new_file;
 
     int index_in_dir_entry = get_first_empty_dir_entry(dir_entry, info->root_entry_number);
     if (index_in_dir_entry == -1) return -1;
+    int index_in_fat_entry = get_first_empty_fat_entry(fat, info->available_blocks);
+    if (index_in_fat_entry == -1) return -1;
 
     time(&now);
     time_info = localtime(&now);
@@ -134,11 +163,13 @@ int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, const char* na
     new_file.size = 0;
     tm_to_date(time_info, &new_file.create);
     tm_to_date(time_info, &new_file.update);
-    new_file.first_block = ENDOFCHAIN;
+    new_file.first_block = index_in_fat_entry;
 
     dir_entry[index_in_dir_entry] = new_file;
+    fat[index_in_fat_entry] = ENDOFCHAIN;
 
     write_sector((int) info->sector_per_fat+1, dir_entry);
+    write_fat_table(fat, info->sector_per_fat);
 
     return 0;
 }

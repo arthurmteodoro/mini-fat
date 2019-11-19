@@ -36,6 +36,7 @@ typedef struct date_format date_t;
 
 struct info_entry {
     uint32_t total_block;
+    uint32_t available_blocks;
     uint32_t block_size;
     uint32_t block_per_sector;
     uint32_t sector_per_fat;
@@ -55,6 +56,7 @@ typedef struct dir_entry dir_entry_t;
 
 int format(int size);
 void init(info_entry_t* info, fat_entry_t** fat_entry, dir_entry_t** root_dir);
-int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, const char* name);
+void release(fat_entry_t** fat_entry, dir_entry_t** root_dir);
+int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, fat_entry_t * fat, const char* name);
 
 #endif //MINI_FAT_MINIFAT_H
