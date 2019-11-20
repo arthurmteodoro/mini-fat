@@ -2,23 +2,38 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
+
+void print_entry(dir_entry_t* entry) {
+    if (entry->type == EMPTY_TYPE) {
+        printf("Empty node\n");
+    } else {
+        printf("Name: %s\n", entry->name);
+        printf("Type: %d\n", entry->type);
+        printf("Size: %d\n", entry->size);
+        printf("Creation time: %d/%d/%d - %d:%d:%d\n", entry->create.day, entry->create.month,
+               entry->create.year, entry->create.hour, entry->create.minutes, entry->create.seconds);
+        printf("Update time: %d/%d/%d - %d:%d:%d\n", entry->update.day, entry->update.month,
+               entry->update.year, entry->update.hour, entry->update.minutes, entry->update.seconds);
+        printf("First Block: %d\n", entry->first_block);
+    }
+}
 
 void print_dir_entry(dir_entry_t* dir) {
     for(int i = 0; i < 49; i++) {
         printf("Node %d\n", i);
-        if (dir[i].type == EMPTY_TYPE) {
-            printf("Empty node\n");
-        } else {
-            printf("Name: %s\n", dir[i].name);
-            printf("Type: %d\n", dir[i].type);
-            printf("Size: %d\n", dir[i].size);
-            printf("Creation time: %d/%d/%d - %d:%d:%d\n", dir[i].create.day, dir[i].create.month,
-                    dir[i].create.year, dir[i].create.hour, dir[i].create.minutes, dir[i].create.seconds);
-            printf("Update time: %d/%d/%d - %d:%d:%d\n", dir[i].update.day, dir[i].update.month,
-                   dir[i].update.year, dir[i].update.hour, dir[i].update.minutes, dir[i].update.seconds);
-            printf("First Block: %d\n", dir[i].first_block);
-        }
+        print_entry(&dir[i]);
         printf("----------\n");
+    }
+}
+
+void print_fat(fat_entry_t* fat, int size) {
+    for(int i = 0; i < size; i++) {
+        if (fat[i] == ENDOFCHAIN) printf(" ENDOFCHAIN");
+        else if (fat[i] == UNUSED) printf(" UNUSED");
+        else printf(" %d", fat[i]);
+
+        if (i == 50) break;
     }
 }
 
@@ -28,7 +43,7 @@ void print_disk_info(info_entry_t info) {
     printf("Block size: %d\n", info.block_size);
     printf("Blocks per sector: %d\n", info.block_per_sector);
     printf("Sector per fat: %d\n", info.sector_per_fat);
-    printf("Root entry number: %d\n", info.root_entry_number);
+    printf("Dir entry number: %d\n", info.dir_entry_number);
 }
 
 int main() {
@@ -36,9 +51,9 @@ int main() {
 
     fd = open(virtual_disk, O_RDWR);
 
-    /*printf("Formatting disk ..........");
+    printf("Formatting disk ..........");
     format(3862528);
-    printf("   disk successfully formatted\n");*/
+    printf("   disk successfully formatted\n");
 
     info_entry_t info;
     fat_entry_t* fat_entry = NULL;
@@ -50,9 +65,47 @@ int main() {
     printf("Disk infos: \n");
     print_disk_info(info);
 
+    printf("\n\nClear\n");
     print_dir_entry(root_entry);
-    create_empty_file(root_entry, &info, fat_entry,"teste");
+    create_empty_file(NULL, root_entry, &info, fat_entry,"teste");
+    //print_dir_entry(root_entry);
+
+    create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
+
+    printf("\n\nAfter create file and dir\n");
     print_dir_entry(root_entry);
+
+    dir_descriptor_t subdir1;
+    search_dir_entry(root_entry, &info, "dir1", &subdir1);
+
+    create_empty_file(&subdir1.dir_infos, (dir_entry_t*)subdir1.entry, &info, fat_entry, "teste02");
+
+    printf("\n\nSubdir: \n");
+    print_dir_entry((dir_entry_t*)subdir1.entry);
+
+    printf("\n\n Entry file teste\n");
+    dir_entry_t file;
+    search_file_in_dir(root_entry, "teste", &file);
+    print_entry(&file);
+
+    // char* test_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam nunc est, viverra quis metus vel, elementum cursus nisl. Nullam id.";
+    char test_text[10000];
+    for(int i = 0; i < 10000; i++)
+        test_text[i] = (char) i;
+
+    //for(int i = 0; i < 100; i++) {
+    write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
+    //}
+    //int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 8000);
+    //printf("*********************%d\n", asd);
+    //write_file(fat_entry, &info, NULL, root_entry, &file, 31*strlen(test_text), test_text, strlen(test_text));
+    //write_file(fat_entry, &info, NULL, root_entry, &file, 32*strlen(test_text), test_text, strlen(test_text));
+
+    search_file_in_dir(root_entry, "teste", &file);
+    print_entry(&file);
+
+    printf("\n\nFAT: \n");
+    print_fat(fat_entry, info.available_blocks/info.block_per_sector);
 
     release(&fat_entry, &root_entry);
     close(fd);

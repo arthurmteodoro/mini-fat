@@ -40,7 +40,7 @@ struct info_entry {
     uint32_t block_size;
     uint32_t block_per_sector;
     uint32_t sector_per_fat;
-    uint32_t root_entry_number;
+    uint32_t dir_entry_number;
 } __attribute__((packed));
 typedef struct info_entry info_entry_t;
 
@@ -54,9 +54,19 @@ struct dir_entry {
 } __attribute__((packed));
 typedef struct dir_entry dir_entry_t;
 
+struct dir_descriptor {
+    dir_entry_t dir_infos;
+    char entry[SECTOR_SIZE];
+} __attribute__((packed));
+typedef struct dir_descriptor dir_descriptor_t;
+
 int format(int size);
 void init(info_entry_t* info, fat_entry_t** fat_entry, dir_entry_t** root_dir);
 void release(fat_entry_t** fat_entry, dir_entry_t** root_dir);
-int create_empty_file(dir_entry_t* dir_entry, info_entry_t* info, fat_entry_t * fat, const char* name);
+int create_empty_file(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t* info, fat_entry_t * fat, const char* name);
+int create_empty_dir(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t* info, fat_entry_t * fat, const char* name);
+int search_dir_entry(dir_entry_t* dir_entry, info_entry_t* info, const char* name, dir_descriptor_t* descriptor);
+int search_file_in_dir(dir_entry_t* dir_entry, const char* name, dir_entry_t* file);
+int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, dir_entry_t* dir_entry_list, dir_entry_t* file, int offset, char* buffer, int size);
 
 #endif //MINI_FAT_MINIFAT_H
