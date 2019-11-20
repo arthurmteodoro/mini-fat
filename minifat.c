@@ -204,10 +204,8 @@ int create_empty_file(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_
     int sector_to_write;
     if (dir == NULL)
         sector_to_write = info->sector_per_fat+1;
-        // write_sector((int) info->sector_per_fat+1, dir_entry_list);
     else
         sector_to_write = info->sector_per_fat+1+dir->first_block;
-        //write_sector((int) info->sector_per_fat+1+dir->first_block, dir_entry_list);
     write_sector(sector_to_write, dir_entry_list);
     write_fat_table(fat, info->sector_per_fat);
 
@@ -272,7 +270,6 @@ int search_file_in_dir(dir_entry_t* dir_entry, const char* name, dir_entry_t* fi
         if (dir_entry[i].type != EMPTY_TYPE) {
             if (strcmp(dir_entry[i].name, name) == 0) {
                 memcpy(file, &dir_entry[i], sizeof(dir_entry_t));
-                //*file = dir_entry[i];
 
                 return 0;
             }
@@ -301,6 +298,7 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
     if (offset > file->size) return -1;
     if (offset < 0) return -1;
 
+    // get the number of empty bytes in sector and a number of used bytes
     int used_bytes_last_block = file->size;
     int number_of_blocks = 1;
     while(used_bytes_last_block > SECTOR_SIZE) {
@@ -308,61 +306,84 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
         number_of_blocks++;
     }
     int empty_bytes_in_last_block = SECTOR_SIZE - used_bytes_last_block;
+
+    // get the last sector
     int sector_number = -1;
     for(int i = 0; i < number_of_blocks; i++) {
         if (sector_number == -1) sector_number = file->first_block;
         else sector_number = fat[sector_number-1];
     }
 
+    // if the buffer fits in the last sector
     if (empty_bytes_in_last_block >= size) {
+        // get offset in buffer
         int real_offset = offset;
         if (number_of_blocks > 1) real_offset = offset - (number_of_blocks-1)*SECTOR_SIZE;
+
+        // read a sector, write in end and save sector
         read_sector((int) info->sector_per_fat+1+sector_number, sector_buffer);
         memcpy(&sector_buffer[real_offset], buffer, size);
         write_sector((int) info->sector_per_fat+1+sector_number, sector_buffer);
 
-    } else if ((empty_bytes_in_last_block < size) && (size < SECTOR_SIZE)) {
+    // if the buffer does not fit in the last sector and the size is smaller than one sector
+    } else if ((empty_bytes_in_last_block < size) && (size <= SECTOR_SIZE)) {
+        // get new block
         int new_fat_entry_file = get_first_empty_fat_entry(fat, info->available_blocks);
         if (new_fat_entry_file == -1) return -1;
 
+        // calculate offset in buffer
         int real_offset = offset;
         if (number_of_blocks > 1) real_offset = offset - (number_of_blocks-1)*SECTOR_SIZE;
 
+        // read a sector, write and save sector
         read_sector((int) info->sector_per_fat+1+sector_number, sector_buffer);
         memcpy(&sector_buffer[real_offset], buffer, empty_bytes_in_last_block);
         write_sector((int) info->sector_per_fat+1+sector_number, sector_buffer);
 
+        // update fat table
         fat[sector_number-1] = new_fat_entry_file;
         fat[new_fat_entry_file] = ENDOFCHAIN;
 
+        // write buffer in sector
         memset(sector_buffer, 0x0, SECTOR_SIZE);
         memcpy(sector_buffer, &buffer[empty_bytes_in_last_block], size-empty_bytes_in_last_block);
-
         write_sector((int) info->sector_per_fat+1+new_fat_entry_file, sector_buffer);
+
+        // write fat table
         write_fat_table(fat, info->sector_per_fat);
 
+    // if the buffer does not fit in the last sector and the size is greater than one sector
     } else if ((empty_bytes_in_last_block < size) && (size > SECTOR_SIZE)){
         int real_offset = offset;
         int buffer_offset = 0;
         int remain_write = size;
+
+        // get offset
         if (number_of_blocks > 1) real_offset = offset - (number_of_blocks-1)*SECTOR_SIZE;
 
         // write first block
         read_sector((int) info->sector_per_fat+1+sector_number, sector_buffer);
         memcpy(&sector_buffer[real_offset], buffer, empty_bytes_in_last_block);
         write_sector((int) info->sector_per_fat+1+sector_number, sector_buffer);
+
+        // calculate buffer offset and remain bytes to write
         buffer_offset += empty_bytes_in_last_block;
         remain_write -= empty_bytes_in_last_block;
 
+        // calculate the number of blocks required
         int number_of_request_blocks = (int) ceil((double)(size - empty_bytes_in_last_block)/SECTOR_SIZE);
         for(int i = 0; i < number_of_request_blocks; i++) {
+            // get new fat entry
             int new_fat_entry_file = get_first_empty_fat_entry(fat, info->available_blocks);
 
+            // update fat table
             fat[sector_number-1] = new_fat_entry_file;
             fat[new_fat_entry_file] = ENDOFCHAIN;
 
+            // clear sector
             memset(sector_buffer, 0x0, SECTOR_SIZE);
 
+            // if is last block, write only remain bytes
             if(i == number_of_request_blocks-1) {
                 memcpy(sector_buffer, &buffer[buffer_offset], remain_write);
                 remain_write -= remain_write;
@@ -374,10 +395,12 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
                 buffer_offset += SECTOR_SIZE;
             }
 
+            // write sector
             write_sector((int) info->sector_per_fat+1+new_fat_entry_file, sector_buffer);
             sector_number = new_fat_entry_file+1;
         }
 
+        // update fat entry
         write_fat_table(fat, info->sector_per_fat);
     }
 
@@ -387,11 +410,13 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
     time(&now);
     time_info = localtime(&now);
 
+    // update file size and update time
     file->size += size;
     tm_to_date(time_info, &file->update);
     int file_index = search_file_index_in_dir(dir_entry_list, file->name);
     memcpy(&dir_entry_list[file_index], file, sizeof(dir_entry_t));
 
+    // update dir entry list
     int sector_to_write;
     if (dir == NULL)
         sector_to_write = info->sector_per_fat+1;
