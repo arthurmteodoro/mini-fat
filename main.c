@@ -70,18 +70,18 @@ int main() {
     create_empty_file(NULL, root_entry, &info, fat_entry,"teste");
     //print_dir_entry(root_entry);
 
-    create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
+    //create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
 
-    printf("\n\nAfter create file and dir\n");
-    print_dir_entry(root_entry);
+    //printf("\n\nAfter create file and dir\n");
+    //print_dir_entry(root_entry);
 
-    dir_descriptor_t subdir1;
-    search_dir_entry(root_entry, &info, "dir1", &subdir1);
+    //dir_descriptor_t subdir1;
+    //search_dir_entry(root_entry, &info, "dir1", &subdir1);
 
-    create_empty_file(&subdir1.dir_infos, (dir_entry_t*)subdir1.entry, &info, fat_entry, "teste02");
+    //create_empty_file(&subdir1.dir_infos, (dir_entry_t*)subdir1.entry, &info, fat_entry, "teste02");
 
-    printf("\n\nSubdir: \n");
-    print_dir_entry((dir_entry_t*)subdir1.entry);
+    //printf("\n\nSubdir: \n");
+    //print_dir_entry((dir_entry_t*)subdir1.entry);
 
     printf("\n\n Entry file teste\n");
     dir_entry_t file;
@@ -93,13 +93,19 @@ int main() {
     for(int i = 0; i < 10000; i++)
         test_text[i] = (char) i;
 
-    //for(int i = 0; i < 100; i++) {
-    write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
-    //}
-    //int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 8000);
-    //printf("*********************%d\n", asd);
-    //write_file(fat_entry, &info, NULL, root_entry, &file, 31*strlen(test_text), test_text, strlen(test_text));
-    //write_file(fat_entry, &info, NULL, root_entry, &file, 32*strlen(test_text), test_text, strlen(test_text));
+    /*for(int i = 0; i < 100; i++) {
+        write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
+    }*/
+
+    /*for(int i = 0; i < 100; i++){
+        int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 300*i, test_text, 300);
+    }*/
+    //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
+    int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
+    write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, SECTOR_SIZE-200);
+    write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE*2-200, test_text, SECTOR_SIZE);
+    //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
+    //write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, 300);
 
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
