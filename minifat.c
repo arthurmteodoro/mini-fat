@@ -413,9 +413,9 @@ int read_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* file, in
     char sector_buffer[SECTOR_SIZE];
 
     // get sector of offset
-    int remain_offset = offset;
-    while (remain_offset > SECTOR_SIZE-1) {
-        remain_offset -= SECTOR_SIZE;
+    int first_sector_offset = offset;
+    while (first_sector_offset > SECTOR_SIZE-1) {
+        first_sector_offset -= SECTOR_SIZE;
     }
 
     int sector_to_read = file->first_block;
@@ -425,14 +425,15 @@ int read_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* file, in
         offset_sub -= SECTOR_SIZE;
     }
 
-    int read_bytes_number = 0;
-    int is_eof = 0;
-    int buffer_sector_offset = 0;
-    int qtd_remain_read = size;
-    while(qtd_remain_read > 0 && !is_eof) {
-        read_sector(info->sector_per_fat+(uint32_t)1+sector_to_read, sector_buffer);
+    int buffer_left = size;
 
-    }
+    do {
+        int copy_length = SECTOR_SIZE - first_sector_offset;
+        if (copy_length > buffer_left)
+            copy_length = buffer_left;
 
-    return read_bytes_number;
+        printf("asd");
+    } while(buffer_left > 0);
+
+    return size;
 }
