@@ -402,3 +402,37 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
 
     return size;
 }
+
+int read_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* file, int offset, char* buffer, int size) {
+    if (fat == NULL) return -1;
+    if (info == NULL) return -1;
+    if (file == NULL) return -1;
+    if (buffer == NULL) return -1;
+    if (offset > file->size) return -1;
+
+    char sector_buffer[SECTOR_SIZE];
+
+    // get sector of offset
+    int remain_offset = offset;
+    while (remain_offset > SECTOR_SIZE-1) {
+        remain_offset -= SECTOR_SIZE;
+    }
+
+    int sector_to_read = file->first_block;
+    int offset_sub = offset;
+    while(offset_sub > SECTOR_SIZE+1) {
+        sector_to_read = fat[sector_to_read-1];
+        offset_sub -= SECTOR_SIZE;
+    }
+
+    int read_bytes_number = 0;
+    int is_eof = 0;
+    int buffer_sector_offset = 0;
+    int qtd_remain_read = size;
+    while(qtd_remain_read > 0 && !is_eof) {
+        read_sector(info->sector_per_fat+(uint32_t)1+sector_to_read, sector_buffer);
+
+    }
+
+    return read_bytes_number;
+}
