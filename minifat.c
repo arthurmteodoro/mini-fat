@@ -337,7 +337,7 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
         write_sector(info->sector_per_fat+(uint32_t)1+sector_to_begin_write, sector_buffer);
     } else {
         int blocks_number_to_write = (int) ceil((double) size/SECTOR_SIZE);
-        int number_available_sectors = get_empty_fat_entry_number(fat, info->available_blocks);
+        int number_available_sectors = get_empty_fat_entry_number(fat, info->sector_per_fat);
         if (blocks_number_to_write > number_available_sectors) return -1;
 
         int qtd_write = size;
@@ -386,7 +386,8 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
     time_info = localtime(&now);
 
     // update file size and update time
-    file->size += size;
+    if (offset + size > file->size)
+        file->size = offset + size;
     tm_to_date(time_info, &file->update);
     int file_index = search_file_index_in_dir(dir_entry_list, file->name);
     memcpy(&dir_entry_list[file_index], file, sizeof(dir_entry_t));

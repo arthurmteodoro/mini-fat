@@ -88,7 +88,7 @@ int main() {
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
 
-    // char* test_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam nunc est, viverra quis metus vel, elementum cursus nisl. Nullam id.";
+    char* lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam nunc est, viverra quis metus vel, elementum cursus nisl. Nullam id.";
     char test_text[10000];
     for(int i = 0; i < 10000; i++)
         test_text[i] = (char) i;
@@ -101,11 +101,15 @@ int main() {
         int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 300*i, test_text, 300);
     }*/
     //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
+
     int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
     write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, SECTOR_SIZE-200);
     write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE*2-200, test_text, SECTOR_SIZE);
+
     //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
     //write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, 300);
+
+    write_file(fat_entry, &info, NULL, root_entry, &file, 3000, lorem, strlen(lorem));
 
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
