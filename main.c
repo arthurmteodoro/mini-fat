@@ -109,18 +109,20 @@ int main() {
     //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
     //write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, 300);
 
-    write_file(fat_entry, &info, NULL, root_entry, &file, 3000, lorem, strlen(lorem));
+    write_file(fat_entry, &info, NULL, root_entry, &file, 4090, lorem, strlen(lorem));
 
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
 
     char buffer[2048];
-    int number_read = read_file(fat_entry, &info, &file, 5000, buffer, 2048);
+    int number_read = read_file(fat_entry, &info, &file, 12070, buffer, 100);
     printf("\n\nValue Buffer: \n");
     for(int i = 0; i < number_read; i++) {
         if (i % 50 == 0) printf("\n");
         printf("%02X ", (unsigned char) buffer[i]);
     }
+    /*buffer[number_read] = '\0';
+    printf("\n\n%s\n", buffer);*/
 
     printf("\n\nFAT: \n");
     print_fat(fat_entry, info.available_blocks/info.block_per_sector);
