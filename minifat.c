@@ -426,6 +426,7 @@ int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* fi
         offset_sub -= SECTOR_SIZE;
     }
 
+    int file_offset = offset;
     int buffer_left = size;
     int buffer_offset = 0;
 
@@ -433,12 +434,18 @@ int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* fi
         int copy_length = SECTOR_SIZE - first_sector_offset;
         if (copy_length > buffer_left)
             copy_length = buffer_left;
+        if (file_offset + copy_length > file->size)
+            copy_length = file->size - file_offset;
 
         read_sector(info->sector_per_fat+(uint32_t)1+sector_to_read, sector_buffer);
         memcpy(&buffer[buffer_offset], &sector_buffer[first_sector_offset], copy_length);
 
         buffer_left -= copy_length;
         buffer_offset += copy_length;
+        file_offset += copy_length;
+
+        if (file_offset >= file->size)
+            return size - buffer_left;
 
         if (first_sector_offset + copy_length >= SECTOR_SIZE) {
             sector_to_read = fat[sector_to_read-1];

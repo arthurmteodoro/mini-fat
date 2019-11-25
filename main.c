@@ -114,9 +114,9 @@ int main() {
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
 
-    char buffer[2048];
-    int number_read = read_file(fat_entry, &info, &file, 12070, buffer, 100);
-    printf("\n\nValue Buffer: \n");
+    char buffer[6000];
+    int number_read = read_file(fat_entry, &info, &file, 7088, buffer, 6000);
+    printf("\n\nNumber bytes read: %d\tValue Buffer: \n", number_read);
     for(int i = 0; i < number_read; i++) {
         if (i % 50 == 0) printf("\n");
         printf("%02X ", (unsigned char) buffer[i]);
