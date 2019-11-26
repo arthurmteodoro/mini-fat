@@ -449,3 +449,34 @@ int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* fi
 
     return size;
 }
+
+int delete_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, dir_entry_t* dir_entry_list, dir_entry_t* file) {
+    int file_index = search_file_index_in_dir(dir_entry_list, file->name);
+    if (file_index == -1) return -1;
+
+    int sector = file->first_block;
+    int stop = 0;
+    while (!stop) {
+        int fat_status = fat[sector-1];
+        if (fat_status == ENDOFCHAIN) {
+            fat[sector - 1] = UNUSED;
+            stop = 1;
+        } else {
+            fat[sector - 1] = UNUSED;
+            sector = fat_status;
+        }
+    }
+    file->mode = 0;
+
+    memcpy(&dir_entry_list[file_index], file, sizeof(dir_entry_t));
+
+    // update dir entry list
+    uint32_t sector_to_write;
+    if (dir == NULL)
+        sector_to_write = info->sector_per_fat+1;
+    else
+        sector_to_write = info->sector_per_fat+1+dir->first_block;
+    write_sector(sector_to_write, dir_entry_list);
+
+    return 1;
+}
