@@ -363,9 +363,10 @@ int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, di
 
                 sector_to_begin_write = new_fat_input;
                 write_fat_table(fat, info->sector_per_fat);
+            } else {
+                sector_to_begin_write = sector_status;
             }
 
-            sector_to_begin_write = sector_status;
             read_sector(info->sector_per_fat+(uint32_t)1+sector_to_begin_write, sector_buffer);
 
             if(qtd_write > SECTOR_SIZE) {

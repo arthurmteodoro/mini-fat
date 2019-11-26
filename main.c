@@ -115,14 +115,14 @@ int main() {
     print_entry(&file);
 
     char buffer[6000];
-    int number_read = read_file(fat_entry, &info, &file, 7088, buffer, 6000);
+    int number_read = read_file(fat_entry, &info, &file, 4090, buffer, strlen(lorem));
     printf("\n\nNumber bytes read: %d\tValue Buffer: \n", number_read);
     for(int i = 0; i < number_read; i++) {
         if (i % 50 == 0) printf("\n");
         printf("%02X ", (unsigned char) buffer[i]);
     }
-    /*buffer[number_read] = '\0';
-    printf("\n\n%s\n", buffer);*/
+    buffer[number_read] = '\0';
+    printf("\n\n%s\n", buffer);
 
     printf("\n\nFAT: \n");
     print_fat(fat_entry, info.available_blocks/info.block_per_sector);
