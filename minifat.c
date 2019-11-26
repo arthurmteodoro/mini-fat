@@ -7,31 +7,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/stat.h>
 
 int fd;
-
-void print_entry_1(dir_entry_t* entry) {
-    if (entry->type == EMPTY_TYPE) {
-        printf("Empty node\n");
-    } else {
-        printf("Name: %s\n", entry->name);
-        printf("Type: %d\n", entry->type);
-        printf("Size: %d\n", entry->size);
-        printf("Creation time: %u/%u/%u - %u:%u:%u\n", entry->create.day, entry->create.month,
-               entry->create.year, entry->create.hour, entry->create.minutes, entry->create.seconds);
-        printf("Update time: %d/%d/%d - %d:%d:%d\n", entry->update.day, entry->update.month,
-               entry->update.year, entry->update.hour, entry->update.minutes, entry->update.seconds);
-        printf("First Block: %d\n", entry->first_block);
-    }
-}
-
-void print_dir_entry_1(dir_entry_t* dir) {
-    for(int i = 0; i < 49; i++) {
-        printf("Node %d\n", i);
-        print_entry_1(&dir[i]);
-        printf("----------\n");
-    }
-}
 
 void print_disk_info_1(info_entry_t info) {
     printf("Total blocks: %d\n", info.total_block);
@@ -163,7 +141,7 @@ void release(fat_entry_t** fat_entry, dir_entry_t** root_dir) {
 
 int get_first_empty_dir_entry(const dir_entry_t* dir_entry, int size) {
     for(int i = 0; i < size; i++) {
-        if (dir_entry[i].type == EMPTY_TYPE) return i;
+        if (dir_entry[i].mode == EMPTY_TYPE) return i;
     }
 
     return -1;
@@ -177,7 +155,7 @@ int get_first_empty_fat_entry(const fat_entry_t* fat, int size) {
     return -1;
 }
 
-int create_empty_file(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t* info, fat_entry_t * fat, const char* name) {
+int create_empty_file(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t* info, fat_entry_t * fat, const char* name, mode_t mode, uid_t uid, gid_t gid) {
     time_t now;
     struct tm* time_info;
     dir_entry_t new_file;
@@ -191,7 +169,9 @@ int create_empty_file(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_
     time_info = localtime(&now);
 
     strcpy(new_file.name, name);
-    new_file.type = FILE_TYPE;
+    new_file.mode = mode;
+    new_file.uid = uid;
+    new_file.gid = gid;
     new_file.size = 0;
     tm_to_date(time_info, &new_file.create);
     tm_to_date(time_info, &new_file.update);
@@ -212,7 +192,7 @@ int create_empty_file(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_
     return 0;
 }
 
-int create_empty_dir(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t* info, fat_entry_t * fat, const char* name) {
+int create_empty_dir(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t* info, fat_entry_t * fat, const char* name, mode_t mode, uid_t uid, gid_t gid) {
     time_t now;
     struct tm* time_info;
     dir_entry_t new_file;
@@ -226,7 +206,9 @@ int create_empty_dir(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t
     time_info = localtime(&now);
 
     strcpy(new_file.name, name);
-    new_file.type = DIR_TYPE;
+    new_file.mode = mode;
+    new_file.uid = uid;
+    new_file.gid = gid;
     new_file.size = 0;
     tm_to_date(time_info, &new_file.create);
     tm_to_date(time_info, &new_file.update);
@@ -252,8 +234,8 @@ int create_empty_dir(dir_entry_t* dir, dir_entry_t* dir_entry_list, info_entry_t
 
 int search_dir_entry(dir_entry_t* dir_entry, info_entry_t* info, const char* name, dir_descriptor_t* descriptor) {
     for(unsigned long i = 0; i < DIRENTRYCOUNT; i++) {
-        if (dir_entry[i].type != EMPTY_TYPE) {
-            if (strcmp(dir_entry[i].name, name) == 0) {
+        if (dir_entry[i].mode != EMPTY_TYPE) {
+            if (strcmp(dir_entry[i].name, name) == 0 && S_ISDIR(dir_entry[i].mode)) {
                 memcpy(&descriptor->dir_infos, &dir_entry[i], sizeof(dir_entry_t));
                 read_sector((uint32_t) info->sector_per_fat+1+dir_entry[i].first_block, descriptor->entry);
 
@@ -267,8 +249,8 @@ int search_dir_entry(dir_entry_t* dir_entry, info_entry_t* info, const char* nam
 
 int search_file_in_dir(dir_entry_t* dir_entry, const char* name, dir_entry_t* file) {
     for(unsigned long i = 0; i < DIRENTRYCOUNT; i++) {
-        if (dir_entry[i].type != EMPTY_TYPE) {
-            if (strcmp(dir_entry[i].name, name) == 0) {
+        if (dir_entry[i].mode!= EMPTY_TYPE) {
+            if (strcmp(dir_entry[i].name, name) == 0 && S_ISREG(dir_entry[i].mode)) {
                 memcpy(file, &dir_entry[i], sizeof(dir_entry_t));
 
                 return 0;
@@ -281,8 +263,20 @@ int search_file_in_dir(dir_entry_t* dir_entry, const char* name, dir_entry_t* fi
 
 int search_file_index_in_dir(dir_entry_t* dir_entry, const char* name) {
     for(unsigned long i = 0; i < DIRENTRYCOUNT; i++) {
-        if (dir_entry[i].type != EMPTY_TYPE) {
-            if (strcmp(dir_entry[i].name, name) == 0) {
+        if (dir_entry[i].mode != EMPTY_TYPE) {
+            if (strcmp(dir_entry[i].name, name) == 0 && S_ISREG(dir_entry[i].mode)) {
+                return (int) i;
+            }
+        }
+    }
+
+    return -1;
+}
+
+int search_dir_index_in_dir(dir_entry_t* dir_entry, const char* name) {
+    for(unsigned long i = 0; i < DIRENTRYCOUNT; i++) {
+        if (dir_entry[i].mode != EMPTY_TYPE) {
+            if (strcmp(dir_entry[i].name, name) == 0 && S_ISDIR(dir_entry[i].mode)) {
                 return (int) i;
             }
         }
@@ -466,4 +460,56 @@ int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* fi
     } while(buffer_left > 0);
 
     return size;
+}
+
+int delete_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, dir_entry_t* dir_entry_list, dir_entry_t* file) {
+    int file_index = search_file_index_in_dir(dir_entry_list, file->name);
+    if (file_index == -1) return -1;
+
+    int sector = file->first_block;
+    int stop = 0;
+    while (!stop) {
+        int fat_status = fat[sector-1];
+        if (fat_status == ENDOFCHAIN) {
+            fat[sector - 1] = UNUSED;
+            stop = 1;
+        } else {
+            fat[sector - 1] = UNUSED;
+            sector = fat_status;
+        }
+    }
+    file->mode = 0;
+
+    memcpy(&dir_entry_list[file_index], file, sizeof(dir_entry_t));
+
+    // update dir entry list
+    uint32_t sector_to_write;
+    if (dir == NULL)
+        sector_to_write = info->sector_per_fat+1;
+    else
+        sector_to_write = info->sector_per_fat+1+dir->first_block;
+    write_sector(sector_to_write, dir_entry_list);
+
+    return 1;
+}
+
+int delete_dir(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* father_dir, dir_entry_t* dir_entry_list, dir_entry_t* dir) {
+    int file_index = search_dir_index_in_dir(dir_entry_list, dir->name);
+    if (file_index == -1) return -1;
+
+    int sector = dir->first_block;
+    fat[sector - 1] = UNUSED;
+    dir->mode = 0;
+
+    memcpy(&dir_entry_list[file_index], dir, sizeof(dir_entry_t));
+
+    // update dir entry list
+    uint32_t sector_to_write;
+    if (father_dir == NULL)
+        sector_to_write = info->sector_per_fat+1;
+    else
+        sector_to_write = info->sector_per_fat+1+dir->first_block;
+    write_sector(sector_to_write, dir_entry_list);
+
+    return 1;
 }
