@@ -5,11 +5,13 @@
 #include <string.h>
 
 void print_entry(dir_entry_t* entry) {
-    if (entry->type == EMPTY_TYPE) {
+    if (entry->mode == EMPTY_TYPE) {
         printf("Empty node\n");
     } else {
         printf("Name: %s\n", entry->name);
-        printf("Type: %d\n", entry->type);
+        printf("Mode: %o\n",  entry->mode);
+        printf("UID: %d\n", entry->uid);
+        printf("GID: %d\n", entry->gid);
         printf("Size: %d\n", entry->size);
         printf("Creation time: %d/%d/%d - %d:%d:%d\n", entry->create.day, entry->create.month,
                entry->create.year, entry->create.hour, entry->create.minutes, entry->create.seconds);
@@ -67,7 +69,7 @@ int main() {
 
     printf("\n\nClear\n");
     print_dir_entry(root_entry);
-    create_empty_file(NULL, root_entry, &info, fat_entry,"teste");
+    create_empty_file(NULL, root_entry, &info, fat_entry,"teste", S_IFREG | 0644, getuid(), getgid());
     //print_dir_entry(root_entry);
 
     //create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
