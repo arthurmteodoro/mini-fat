@@ -427,17 +427,23 @@ int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* fi
         offset_sub -= SECTOR_SIZE;
     }
 
+    // a file offset, left elements from buffer and buffer offset
     int file_offset = offset;
     int buffer_left = size;
     int buffer_offset = 0;
 
     do {
+        // calculate how many bytes copy
         int copy_length = SECTOR_SIZE - first_sector_offset;
+
+        // if bytes remain in buffer is greater buffer left elements
         if (copy_length > buffer_left)
             copy_length = buffer_left;
+        // if copy value extends file size
         if (file_offset + copy_length > file->size)
             copy_length = file->size - file_offset;
 
+        // copy value
         read_sector(info->sector_per_fat+(uint32_t)1+sector_to_read, sector_buffer);
         memcpy(&buffer[buffer_offset], &sector_buffer[first_sector_offset], copy_length);
 
@@ -445,11 +451,14 @@ int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* fi
         buffer_offset += copy_length;
         file_offset += copy_length;
 
+        // if file end
         if (file_offset >= file->size)
             return size - buffer_left;
 
+        // if need get next sector
         if (first_sector_offset + copy_length >= SECTOR_SIZE) {
             sector_to_read = fat[sector_to_read-1];
+            // if end of file return, else, new sector loaded
             if (sector_to_read == ENDOFCHAIN) return size - buffer_left;
             else first_sector_offset = 0;
         }
