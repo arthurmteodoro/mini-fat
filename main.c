@@ -70,39 +70,59 @@ int main() {
     create_empty_file(NULL, root_entry, &info, fat_entry,"teste");
     //print_dir_entry(root_entry);
 
-    create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
+    //create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
 
-    printf("\n\nAfter create file and dir\n");
-    print_dir_entry(root_entry);
+    //printf("\n\nAfter create file and dir\n");
+    //print_dir_entry(root_entry);
 
-    dir_descriptor_t subdir1;
-    search_dir_entry(root_entry, &info, "dir1", &subdir1);
+    //dir_descriptor_t subdir1;
+    //search_dir_entry(root_entry, &info, "dir1", &subdir1);
 
-    create_empty_file(&subdir1.dir_infos, (dir_entry_t*)subdir1.entry, &info, fat_entry, "teste02");
+    //create_empty_file(&subdir1.dir_infos, (dir_entry_t*)subdir1.entry, &info, fat_entry, "teste02");
 
-    printf("\n\nSubdir: \n");
-    print_dir_entry((dir_entry_t*)subdir1.entry);
+    //printf("\n\nSubdir: \n");
+    //print_dir_entry((dir_entry_t*)subdir1.entry);
 
     printf("\n\n Entry file teste\n");
     dir_entry_t file;
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
 
-    // char* test_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam nunc est, viverra quis metus vel, elementum cursus nisl. Nullam id.";
+    char* lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam nunc est, viverra quis metus vel, elementum cursus nisl. Nullam id.";
     char test_text[10000];
     for(int i = 0; i < 10000; i++)
         test_text[i] = (char) i;
 
-    //for(int i = 0; i < 100; i++) {
-    write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
-    //}
-    //int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 8000);
-    //printf("*********************%d\n", asd);
-    //write_file(fat_entry, &info, NULL, root_entry, &file, 31*strlen(test_text), test_text, strlen(test_text));
-    //write_file(fat_entry, &info, NULL, root_entry, &file, 32*strlen(test_text), test_text, strlen(test_text));
+    /*for(int i = 0; i < 100; i++) {
+        write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
+    }*/
+
+    /*for(int i = 0; i < 100; i++){
+        int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 300*i, test_text, 300);
+    }*/
+    //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
+
+    int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
+    write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, SECTOR_SIZE-200);
+    write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE*2-200, test_text, SECTOR_SIZE);
+
+    //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
+    //write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, 300);
+
+    write_file(fat_entry, &info, NULL, root_entry, &file, 4090, lorem, strlen(lorem));
 
     search_file_in_dir(root_entry, "teste", &file);
     print_entry(&file);
+
+    char buffer[6000];
+    int number_read = read_file(fat_entry, &info, &file, 4090, buffer, strlen(lorem));
+    printf("\n\nNumber bytes read: %d\tValue Buffer: \n", number_read);
+    for(int i = 0; i < number_read; i++) {
+        if (i % 50 == 0) printf("\n");
+        printf("%02X ", (unsigned char) buffer[i]);
+    }
+    buffer[number_read] = '\0';
+    printf("\n\n%s\n", buffer);
 
     printf("\n\nFAT: \n");
     print_fat(fat_entry, info.available_blocks/info.block_per_sector);
