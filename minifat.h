@@ -73,5 +73,6 @@ int search_file_in_dir(dir_entry_t* dir_entry, const char* name, dir_entry_t* fi
 int write_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, dir_entry_t* dir_entry_list, dir_entry_t* file, int offset, char* buffer, int size);
 int read_file(const fat_entry_t * fat, const info_entry_t* info, dir_entry_t* file, int offset, char* buffer, int size);
 int delete_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, dir_entry_t* dir_entry_list, dir_entry_t* file);
+int delete_dir(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* father_dir, dir_entry_t* dir_entry_list, dir_entry_t* dir);
 
 #endif //MINI_FAT_MINIFAT_H

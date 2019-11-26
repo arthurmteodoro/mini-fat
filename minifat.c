@@ -273,6 +273,18 @@ int search_file_index_in_dir(dir_entry_t* dir_entry, const char* name) {
     return -1;
 }
 
+int search_dir_index_in_dir(dir_entry_t* dir_entry, const char* name) {
+    for(unsigned long i = 0; i < DIRENTRYCOUNT; i++) {
+        if (dir_entry[i].mode != EMPTY_TYPE) {
+            if (strcmp(dir_entry[i].name, name) == 0 && S_ISDIR(dir_entry[i].mode)) {
+                return (int) i;
+            }
+        }
+    }
+
+    return -1;
+}
+
 int get_empty_fat_entry_number(const fat_entry_t* fat, int size) {
     int counter = 0;
     for(int i = 0; i < size; i++) {
@@ -473,6 +485,27 @@ int delete_file(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* dir, d
     // update dir entry list
     uint32_t sector_to_write;
     if (dir == NULL)
+        sector_to_write = info->sector_per_fat+1;
+    else
+        sector_to_write = info->sector_per_fat+1+dir->first_block;
+    write_sector(sector_to_write, dir_entry_list);
+
+    return 1;
+}
+
+int delete_dir(fat_entry_t * fat, const info_entry_t* info, dir_entry_t* father_dir, dir_entry_t* dir_entry_list, dir_entry_t* dir) {
+    int file_index = search_dir_index_in_dir(dir_entry_list, dir->name);
+    if (file_index == -1) return -1;
+
+    int sector = dir->first_block;
+    fat[sector - 1] = UNUSED;
+    dir->mode = 0;
+
+    memcpy(&dir_entry_list[file_index], dir, sizeof(dir_entry_t));
+
+    // update dir entry list
+    uint32_t sector_to_write;
+    if (father_dir == NULL)
         sector_to_write = info->sector_per_fat+1;
     else
         sector_to_write = info->sector_per_fat+1+dir->first_block;

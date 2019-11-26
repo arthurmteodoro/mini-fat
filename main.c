@@ -73,7 +73,7 @@ int main() {
     create_empty_file(NULL, root_entry, &info, fat_entry,"teste", S_IFREG | 0644, getuid(), getgid());
     //print_dir_entry(root_entry);
 
-    //create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1");
+    create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1", S_IFDIR | 0755, getuid(), getgid());
 
     //printf("\n\nAfter create file and dir\n");
     //print_dir_entry(root_entry);
@@ -138,6 +138,20 @@ int main() {
     print_dir_entry(root_entry);
 
     int ok = search_file_in_dir(root_entry, "teste", &file);
+    printf("Return value to search file: %d\n", ok);
+
+    printf("\n\nDeleting dir\n");
+
+    dir_descriptor_t subdir1;
+    search_dir_entry(root_entry, &info, "dir1", &subdir1);
+    delete_dir(fat_entry, &info, NULL, root_entry, &subdir1.dir_infos);
+
+    printf("\n\nFAT: \n");
+    print_fat(fat_entry, info.available_blocks/info.block_per_sector);
+
+    print_dir_entry(root_entry);
+
+    ok = search_dir_entry(root_entry, &info, "dir1", &subdir1);
     printf("Return value to search file: %d\n", ok);
 
     release(&fat_entry, &root_entry);
