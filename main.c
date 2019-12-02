@@ -71,20 +71,6 @@ int main() {
     printf("\n\nClear\n");
     print_dir_entry(root_entry);
     create_empty_file(NULL, root_entry, &info, fat_entry,"teste", S_IFREG | 0644, getuid(), getgid());
-    //print_dir_entry(root_entry);
-
-    create_empty_dir(NULL, root_entry, &info, fat_entry, "dir1", S_IFDIR | 0755, getuid(), getgid());
-
-    //printf("\n\nAfter create file and dir\n");
-    //print_dir_entry(root_entry);
-
-    //dir_descriptor_t subdir1;
-    //search_dir_entry(root_entry, &info, "dir1", &subdir1);
-
-    //create_empty_file(&subdir1.dir_infos, (dir_entry_t*)subdir1.entry, &info, fat_entry, "teste02");
-
-    //printf("\n\nSubdir: \n");
-    //print_dir_entry((dir_entry_t*)subdir1.entry);
 
     printf("\n\n Entry file teste\n");
     dir_entry_t file;
@@ -96,21 +82,9 @@ int main() {
     for(int i = 0; i < 10000; i++)
         test_text[i] = (char) i;
 
-    /*for(int i = 0; i < 100; i++) {
-        write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
-    }*/
-
-    /*for(int i = 0; i < 100; i++){
-        int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 300*i, test_text, 300);
-    }*/
-    //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, 10000);
-
     int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
     write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, SECTOR_SIZE-200);
     write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE*2-200, test_text, SECTOR_SIZE);
-
-    //write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
-    //write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, 300);
 
     write_file(fat_entry, &info, NULL, root_entry, &file, 4090, lorem, strlen(lorem));
 
@@ -126,33 +100,6 @@ int main() {
     }
     buffer[number_read] = '\0';
     printf("\n\n%s\n", buffer);
-
-    printf("\n\nFAT: \n");
-    print_fat(fat_entry, info.available_blocks/info.block_per_sector);
-
-    delete_file(fat_entry, &info, NULL, root_entry, &file);
-
-    printf("\n\nFAT: \n");
-    print_fat(fat_entry, info.available_blocks/info.block_per_sector);
-
-    print_dir_entry(root_entry);
-
-    int ok = search_file_in_dir(root_entry, "teste", &file);
-    printf("Return value to search file: %d\n", ok);
-
-    printf("\n\nDeleting dir\n");
-
-    dir_descriptor_t subdir1;
-    search_dir_entry(root_entry, &info, "dir1", &subdir1);
-    delete_dir(fat_entry, &info, NULL, root_entry, &subdir1.dir_infos);
-
-    printf("\n\nFAT: \n");
-    print_fat(fat_entry, info.available_blocks/info.block_per_sector);
-
-    print_dir_entry(root_entry);
-
-    ok = search_dir_entry(root_entry, &info, "dir1", &subdir1);
-    printf("Return value to search file: %d\n", ok);
 
     release(&fat_entry, &root_entry);
     close(fd);
