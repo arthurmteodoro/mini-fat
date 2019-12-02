@@ -101,6 +101,13 @@ int main() {
     buffer[number_read] = '\0';
     printf("\n\n%s\n", buffer);
 
+    resize_file(fat_entry, &info, NULL, root_entry, &file, 20000);
+
+    search_file_in_dir(root_entry, "teste", &file);
+    print_entry(&file);
+
+    resize_file(fat_entry, &info, NULL, root_entry, &file, 0);
+
     release(&fat_entry, &root_entry);
     close(fd);
 
