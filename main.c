@@ -1,3 +1,8 @@
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma ide diagnostic ignored "bugprone-narrowing-conversions"
+#pragma ide diagnostic ignored "hicpp-signed-bitwise"
+
 #include "minifat.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -13,7 +18,7 @@ void print_entry(dir_entry_t* entry) {
         printf("UID: %d\n", entry->uid);
         printf("GID: %d\n", entry->gid);
         printf("Size: %d\n", entry->size);
-        printf("Creation time: %d/%d/%d - %d:%d:%d\n", entry->create.day, entry->create.month,
+        printf("Creation time: %d/%d/%d - %d:%d:%d\n", entry->create.day, entry->create.month, // NOLINT(cppcoreguidelines-narrowing-conversions)
                entry->create.year, entry->create.hour, entry->create.minutes, entry->create.seconds);
         printf("Update time: %d/%d/%d - %d:%d:%d\n", entry->update.day, entry->update.month,
                entry->update.year, entry->update.hour, entry->update.minutes, entry->update.seconds);
@@ -27,17 +32,6 @@ void print_dir_entry(dir_entry_t* dir) {
         print_entry(&dir[i]);
         printf("----------\n");
     }
-}
-
-void print_fat(fat_entry_t* fat, int size) {
-    for(int i = 0; i < size; i++) {
-        if (fat[i] == ENDOFCHAIN) printf(" ENDOFCHAIN");
-        else if (fat[i] == UNUSED) printf(" UNUSED");
-        else printf(" %d", fat[i]);
-
-        if (i == 50) break;
-    }
-    printf("\n");
 }
 
 void print_disk_info(info_entry_t info) {
@@ -82,7 +76,7 @@ int main() {
     for(int i = 0; i < 10000; i++)
         test_text[i] = (char) i;
 
-    int asd = write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
+    write_file(fat_entry, &info, NULL, root_entry, &file, 0, test_text, SECTOR_SIZE);
     write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE, test_text, SECTOR_SIZE-200);
     write_file(fat_entry, &info, NULL, root_entry, &file, SECTOR_SIZE*2-200, test_text, SECTOR_SIZE);
 
@@ -108,8 +102,9 @@ int main() {
 
     resize_file(fat_entry, &info, NULL, root_entry, &file, 0);
 
-    release(&fat_entry, &root_entry);
     close(fd);
 
     return 0;
 }
+
+#pragma clang diagnostic pop
